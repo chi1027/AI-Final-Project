@@ -214,6 +214,8 @@ class SnakeGameGATest(SnakeGame):
 		self.generate_fruit()
 		self.restart = True
 		self.all_score.append(self.score)
+
+		print("Test {0} Score: {1:.2f}".format(self.count+1, self.score))
 		if self.score > self.high_score:
 			self.high_score = self.score
 		self.score = 0
