@@ -41,6 +41,7 @@ class SnakeGame():
         self.generate_fruit()
         self.score = 0
         self.high_score = 0
+        self.total_score = 0
         
     def redraw_window(self):
         """Function to update the pygame window every frame, called from playSnakeGame.py."""
@@ -105,6 +106,7 @@ class SnakeGame():
         vis = set()
         vis.add(start)
         queue = [start]
+        count = 0
         while len(queue) > 0:
             n = queue.pop(0)
             if n == end:
@@ -119,26 +121,15 @@ class SnakeGame():
                 if i == 3:
                     now = (n[0]+1, n[1])
                 
-                if now not in vis and now[0] < 10 and now[0] >= 0 and now[1] < 10 and now[1] >= 0:
+                if now not in vis and now[0] < 10 and now[0] >= 0 and now[1] < 10 and now[1] >= 0 and now not in self.snake.body:
+                    count+=1
                     pre_node[now] = n
                     vis.add(now)
                     queue.append(now)
-        
-        next_n = n
-        node = pre_node[n]
-        r = next_n[0] - node[0]
-        c = next_n[1] - node[1]
-        if r == 0 and c == -1:
-            path.append(0)
-        if r == -1 and c == 0:
-            path.append(1)
-        if r == 0 and c == 1:
-            path.append(2)
-        if r == 1 and c == 0:
-            path.append(3)
-        while node != start:
-            next_n = node
-            node = pre_node[node]
+
+        if count != 0:
+            next_n = n
+            node = pre_node[n]
             r = next_n[0] - node[0]
             c = next_n[1] - node[1]
             if r == 0 and c == -1:
@@ -149,9 +140,25 @@ class SnakeGame():
                 path.append(2)
             if r == 1 and c == 0:
                 path.append(3)
+            while node != start:
+                next_n = node
+                node = pre_node[node]
+                r = next_n[0] - node[0]
+                c = next_n[1] - node[1]
+                if r == 0 and c == -1:
+                    path.append(0)
+                if r == -1 and c == 0:
+                    path.append(1)
+                if r == 0 and c == 1:
+                    path.append(2)
+                if r == 1 and c == 0:
+                    path.append(3)
 
-        path.reverse()
-        return path
+            path.reverse()
+            return path
+        else:
+            path.append(1)
+            return path
         
     def move_snake(self):
         """Function to allow the user to move the snake with the arrow keys."""
@@ -293,6 +300,8 @@ class SnakeGame():
         self.snake = Snake(self.rows,self.cols)
         self.generate_fruit()
         self.restart = True
+        print(self.score)
+        self.total_score += self.score 
         if self.score > self.high_score:
             self.high_score = self.score
         self.score = 0
@@ -301,9 +310,10 @@ class SnakeGame():
 def main():
     """Function to play the Snake Game."""
 
-    fps = 8
+    fps = 60
     game = SnakeGame(fps)
     pygame.font.init()
+    count = 0
 
     while game.play:
         #Lock the game at a set fps
@@ -313,11 +323,16 @@ def main():
         game.check_collisions()
 
         if game.restart == True:
+            count+=1
             game.restart = False
             continue
         
         game.redraw_window()
         game.event_handler()
+
+        if count == 10:
+            print(game.total_score/10)
+            break
 
         
 if __name__ == "__main__":
