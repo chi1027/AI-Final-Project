@@ -42,7 +42,7 @@ class Agent():
         self.learning_rate = learning_rate
         self.gamma = GAMMA
 
-        self.qtable = np.zeros((9, 4))
+        self.qtable = np.zeros((10, 10, 9, 4))
 
     def get_state(self):
         fruit = self.game.fruit_pos
@@ -66,7 +66,7 @@ class Agent():
             fruit_direct = 7  # y axis left
         elif fruit[1] == head[1] and fruit[0] > head[0]:
             fruit_direct = 8  # y axis right
-        return fruit_direct
+        return (head[0], head[1], fruit_direct)
 
     def choose_action(self, state):
         if len(self.game.snake.directions) == 0:
@@ -75,14 +75,15 @@ class Agent():
             if random.random() < self.epsilon:
                 action = directs[random.randint(0,3)]
             else:
-                action = directs[np.argmax(self.qtable[(state)])]
+                action = directs[np.argmax(self.qtable[tuple(state)])]
         return action
 
     def learn(self, state, action, reward, next_state, done):
-        cur_q = self.qtable[state, action]
-        max_q = 0 if done else np.max(self.qtable[next_state])
+        # print(tuple(state) + (action,))
+        cur_q = self.qtable[tuple(state) + (action,)]
+        max_q = 0 if done else np.max(self.qtable[tuple(next_state)])
         new_q = (1 - self.learning_rate) * cur_q + self.learning_rate * (reward + self.gamma * max_q)
-        self.qtable[state, action] = new_q
+        self.qtable[tuple(state) + (action, )] = new_q
 
 
 def train():
