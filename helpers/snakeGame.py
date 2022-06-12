@@ -21,7 +21,7 @@ class SnakeGame():
 		self.width: The width of the pygame screen.
 		self.height: The height of the pygame screen.
 		self.grid_start_y: The y position that indicicates where the game grid begins (since the score info is above the grid).
-		self.An attribute to determine if the game is being played.
+		self.play = An attribute to determine if the game is being played.
 		self.restart = An attribute to determine if the snake got a game over and needs to start over.
 		self.clock = A pygame Clock object.
 		self.fps = The frames per second of the game.
@@ -42,7 +42,7 @@ class SnakeGame():
 		self.win = pygame.display.set_mode((self.width, self.height))
 		self.play = True
 		self.restart = False
-		self.clock = pygame.time.Clock()  # Create a object help follow the time
+		self.clock = pygame.time.Clock()
 		self.fps = fps
 		self.rows = 10
 		self.cols = self.rows
@@ -51,6 +51,7 @@ class SnakeGame():
 		self.generate_fruit()
 		self.score = 0
 		self.high_score = 0
+		self.frames_since_last_fruit = 0
 		
 	def redraw_window(self):
 		"""Function to update the pygame window every frame, called from playSnakeGame.py."""
@@ -106,33 +107,31 @@ class SnakeGame():
 
 		self.fruit_pos = (fruit_row,fruit_col)
 
-	def move_snake(self):
+	def move_snake(self, direct):
 		"""Function to allow the user to move the snake with the arrow keys."""
-		
-		keys = pygame.key.get_pressed()
-
-		#Determine which arrow key the user selected
-		if keys[pygame.K_LEFT]:
-			direct = "left"
-		elif keys[pygame.K_UP]:
-			direct = "up"
-		elif keys[pygame.K_RIGHT]:
-			direct = "right"
-		elif keys[pygame.K_DOWN]:
-			direct = "down"
-		else:
-			if len(self.snake.directions) == 0:
-				#Move right at beginning of game
-				direct = "right"
-			else:
-				#Otherwise continue with previous direction if no key pressed
-				direct = self.snake.directions[0]
-
 		self.snake.directions.appendleft(direct)
 		if len(self.snake.directions) > len(self.snake.body):
 			self.snake.directions.pop()
 
 		self.snake.update_body_positions()
+
+		reward = 0
+		done = False
+
+		if self.check_fruit_collision():
+			reward = 20
+		
+		if self.check_wall_collision():
+			reward = -10
+			done = True
+
+		if self.check_body_collision():
+			reward = -10
+			done = True
+		
+		return reward, done
+
+
 
 
 	def draw_grid_updates(self):
@@ -203,8 +202,10 @@ class SnakeGame():
 			self.snake.extend_snake()
 			#Generate a new fruit in a random position
 			self.generate_fruit()
-
 			self.score += 1
+
+			return True
+		return False
 
 	def check_wall_collision(self):
 		"""Function that checks and handles if the snake has collided with a wall."""
@@ -216,7 +217,9 @@ class SnakeGame():
 
 		#If there is a wall collision, game over
 		if head_x == self.cols or head_y == self.rows or head_x < 0 or head_y < 0:
-			self.game_over()
+			# self.game_over()
+			return True
+		return False
 
 	def check_body_collision(self):
 		"""Function that checks and handles if the snake has collided with its own body."""
@@ -227,7 +230,9 @@ class SnakeGame():
 			body_without_head = self.snake.body[1:]
 
 			if head in body_without_head:
-				self.game_over()
+				# self.game_over()
+				return True
+		return False
 
 	def event_handler(self):
 		"""Function for cleanly handling the event of the user quitting."""
@@ -239,12 +244,19 @@ class SnakeGame():
 				pygame.quit()
 				quit()
 
+	def update_frames_since_last_fruit(self):
+		"""Function to check if the snake needs to be killed for not eating a fruit in a while."""
+		
+		self.frames_since_last_fruit += 1
+		if (self.frames_since_last_fruit == 50 and self.score < 6) or self.frames_since_last_fruit == 250:
+			self.game_over()
+
 	def game_over(self):
 		"""Function that restarts the game upon game over."""
+
 		self.snake = Snake(self.rows,self.cols)
 		self.generate_fruit()
 		self.restart = True
-		self.all_score.append(self.score)
 		if self.score > self.high_score:
 			self.high_score = self.score
 		self.score = 0
