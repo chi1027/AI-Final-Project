@@ -46,7 +46,10 @@ class SnakeGame():
 		self.fps = fps
 		self.rows = 10
 		self.cols = self.rows
+		# self.rows = 40
+		# self.cols = 60
 		self.snake = Snake(self.rows,self.cols)
+		self.previous_head = None
 		self.fruit_pos = (0,0)
 		self.generate_fruit()
 		self.score = 0
@@ -109,25 +112,32 @@ class SnakeGame():
 
 	def move_snake(self, direct):
 		"""Function to allow the user to move the snake with the arrow keys."""
+		self.previous_head = self.snake.body[0]
 		self.snake.directions.appendleft(direct)
 		if len(self.snake.directions) > len(self.snake.body):
 			self.snake.directions.pop()
 
 		self.snake.update_body_positions()
-
-		reward = 0
 		done = False
-
-		if self.check_fruit_collision():
-			reward = 20
+		reward = 0
 		
 		if self.check_wall_collision():
-			reward = -10
+			reward = -5
 			done = True
 
-		if self.check_body_collision():
-			reward = -10
+		elif self.check_body_collision():
+			reward = -5
 			done = True
+
+		elif self.check_fruit_collision():
+			reward = 10
+
+		else:
+			prev_head = self.previous_head  # previous state
+			curr_head = self.snake.body[0]  # current state
+			d0 = abs(self.fruit_pos[0] - prev_head[0]) + abs(self.fruit_pos[1] - prev_head[1])
+			d1 = abs(self.fruit_pos[0] - curr_head[0]) + abs(self.fruit_pos[1] - curr_head[1])
+			reward = 1 if d1 < d0 else -1
 		
 		return reward, done
 

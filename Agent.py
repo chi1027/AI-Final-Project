@@ -41,7 +41,7 @@ self.lr = 0.7
 
 
 class Agent():
-    def __init__(self, game, epsilon=0.1, learning_rate=0.7, GAMMA=0.9):
+    def __init__(self, game, epsilon=0.1, learning_rate=0.7, GAMMA=0.5):
         self.game = game
         self.epsilon = epsilon
         self.learning_rate = learning_rate
@@ -76,20 +76,20 @@ class Agent():
         else:
             pos_y = 2
         
-        square = [
-            (head[0]-self.block_size, head[1]),
-            (head[0]+self.block_size, head[1]),
+        sqs = [
             (head[0],                 head[1]-self.block_size),
             (head[0],                 head[1]+self.block_size),
+            (head[0]-self.block_size, head[1]),
+            (head[0]+self.block_size, head[1]),
         ]
 
         surrounding_list = []
-        for sq in square:
-            if head[0] < 0 or head[1] < 0:
+        for sq in sqs:
+            if sq[0] < 0 or sq[1] < 0:
                 surrounding_list.append('1')
-            elif head[0] >= self.game.cols or head[1] >= self.game.rows:
+            elif sq[0] >= self.game.cols or sq[1] >= self.game.rows:
                 surrounding_list.append('1')
-            elif head in self.game.snake.body[1:]:
+            elif sq in self.game.snake.body[1:]:
                 surrounding_list.append('1')
             else:
                 surrounding_list.append('0')
@@ -117,7 +117,7 @@ class Agent():
         action_idx = list(self.action.values()).index(action)
         cur_q = self.qtable[tuple(state) + (action_idx,)]
         max_q = 0 if done else np.max(self.qtable[tuple(next_state)])
-        new_q = (1 - self.learning_rate) * cur_q + self.learning_rate * (reward) # + self.gamma * max_q)
+        new_q = (1 - self.learning_rate) * cur_q + self.learning_rate * (reward + self.gamma * max_q)
         self.qtable[tuple(state) + (action_idx, )] = new_q
 
 
@@ -155,8 +155,7 @@ def train():
             mean_score = total_score / agent.n_game
             plot_scores.append(agent.game.score)
             plot_mean_scores.append(mean_score)
-            # plot(plot_scores, plot_mean_scores)         
-
+            plot(plot_scores, plot_mean_scores)
             agent.game.game_over()      
 
         if agent.game.restart == True:
