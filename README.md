@@ -12,17 +12,21 @@ pip install -r requirements.txt
 
 ### Usage
 
-#### BFS
+#### BFS:
 
 python3 bfs.py
 
-#### Q-Learning
+#### Q-Learning:
 
 python3 Agent.py
 
-#### DQN
+#### DQN:
 
 python3 DQN.py
+
+#### If you want to play the game:
+
+python3 playSnakeGame.py
 
 
 
