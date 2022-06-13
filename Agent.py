@@ -33,11 +33,12 @@ from tqdm import tqdm
 from helpers.snakeGame import SnakeGame
 from helpers.plot import plot
 
+pygame.font.init()
+
 """
 self.epsilon = 0.1
 self.lr = 0.7
 """
-
 
 class Agent():
     def __init__(self, game, epsilon=0.1, learning_rate=0.75, GAMMA=0.8):
@@ -125,7 +126,6 @@ def train():
     fps = 3000
     game = SnakeGame(fps)
     agent = Agent(game)
-    pygame.font.init()
 
     plot_scores = []
     plot_mean_scores = []
@@ -133,11 +133,13 @@ def train():
     record = 0
     
     while agent.game.play:
+        agent.game.clock.tick(game.fps)
+
         if agent.n_game > 100:
             agent.epsilon = 0
         else:
             agent.epsilon = 0.1
-        agent.game.clock.tick(fps)
+
         # get current state
         state = agent.get_state(agent.game)
 
@@ -177,16 +179,20 @@ def train():
     plot(plot_scores, plot_mean_scores)
 
 def test():
-    env = SnakeGame(30)
-    testing_agent = Agent(env)
+    fps = 15
+    game = SnakeGame(fps)
+    testing_agent = Agent(game)
     testing_agent.qtable = np.load("./Tables/cartpole_table.npy")
 
-    for i in range(100):
+    for i in range(30):
         state = testing_agent.get_state(testing_agent.game)
+        testing_agent.epsilon = 0
         scores = []
         while testing_agent.game.play:
+            testing_agent.game.clock.tick(game.fps)
+
             # choose action
-            action = np.argmax(testing_agent.qtable[tuple(state)])
+            action = testing_agent.choose_action(state)
 
             # move snake
             reward, done, reason = testing_agent.game.move_snake(action)
@@ -198,8 +204,10 @@ def test():
             testing_agent.game.update_frames_since_last_fruit(testing_agent.n_game)
 
             if done:
+                testing_agent.n_game += 1
                 scores.append(testing_agent.game.score)
-                testing_agent.game.game_over(testing_agent.n_game, reason) 
+                testing_agent.game.game_over(testing_agent.n_game, reason)
+                break
 
             if testing_agent.game.restart == True:
                 testing_agent.game.restart = False
@@ -210,7 +218,7 @@ def test():
 
             state = next_state
     print("-" * 20)
-    print("Mean Score: {}".format(sum(scores)/100))
+    print("Mean Score: {}, Highest Score: {}".format(sum(scores)/len(scores), testing_agent.game.high_score))
 
     
 
