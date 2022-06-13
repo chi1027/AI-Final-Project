@@ -172,7 +172,7 @@ def train():
         game.event_handler()
 
         if agent.n_game == 500:
-            np.save("./Tables/cartpole_table.npy", agent.qtable)
+            np.save("./Tables/snake_table.npy", agent.qtable)
             print("-" * 20)
             print(f"Average Score: {mean_score}, Highest Score: {agent.game.high_score}")
             break
@@ -182,7 +182,7 @@ def test():
     fps = 15
     game = SnakeGame(fps)
     testing_agent = Agent(game)
-    testing_agent.qtable = np.load("./Tables/cartpole_table.npy")
+    testing_agent.qtable = np.load("./Tables/snake_table.npy")
 
     for i in range(30):
         state = testing_agent.get_state(testing_agent.game)
