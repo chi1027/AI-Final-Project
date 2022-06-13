@@ -1,5 +1,5 @@
 # AI-Final-Project
-##Snake Game AI
+## Snake Game AI
 
 ### Reference:
 Envionment: https://github.com/craighaber/AI-for-Snake-Game
