@@ -28,5 +28,13 @@ python3 DQN.py
 
 python3 playSnakeGame.py
 
+### Result:
+
+### BFS:
+
+average score: 30.17
+
+![alt text](https://github.com/chi1027/AI-Final-Project/blob/main/image/BFS.png)
+
 
 
