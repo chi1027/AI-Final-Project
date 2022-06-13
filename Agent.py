@@ -28,7 +28,6 @@
 import os
 import random
 import numpy as np
-from helpers import snake
 import pygame
 from tqdm import tqdm
 from helpers.snakeGame import SnakeGame
@@ -41,7 +40,7 @@ self.lr = 0.7
 
 
 class Agent():
-    def __init__(self, game, epsilon=0.1, learning_rate=0.7, GAMMA=0.5):
+    def __init__(self, game, epsilon=0.1, learning_rate=0.75, GAMMA=0.8):
         self.game = game
         self.epsilon = epsilon
         self.learning_rate = learning_rate
@@ -57,7 +56,7 @@ class Agent():
 
         self.qtable = np.zeros((3, 3, 16, 4))
 
-    def get_state(self,game):
+    def get_state(self, game):
         head = game.snake.body[0]
         dist_x = game.fruit_pos[1] - head[1]
         dist_y = game.fruit_pos[0] - head[0]
@@ -116,14 +115,16 @@ class Agent():
     def learn(self, state, action, reward, next_state, done):
         action_idx = list(self.action.values()).index(action)
         cur_q = self.qtable[tuple(state) + (action_idx,)]
+        # print(self.qtable[tuple(next_state)])
         max_q = 0 if done else np.max(self.qtable[tuple(next_state)])
         new_q = (1 - self.learning_rate) * cur_q + self.learning_rate * (reward + self.gamma * max_q)
         self.qtable[tuple(state) + (action_idx, )] = new_q
 
 
 def train():
-    env = SnakeGame(30)
-    agent = Agent(env)
+    fps = 3000
+    game = SnakeGame(fps)
+    agent = Agent(game)
     pygame.font.init()
 
     plot_scores = []
@@ -132,7 +133,11 @@ def train():
     record = 0
     
     while agent.game.play:
-        agent.game.clock.tick(agent.game.fps)
+        if agent.n_game > 100:
+            agent.epsilon = 0
+        else:
+            agent.epsilon = 0.1
+        agent.game.clock.tick(fps)
         # get current state
         state = agent.get_state(agent.game)
 
@@ -140,41 +145,40 @@ def train():
         action = agent.choose_action(state)
 
         # perform move and get new state
-        reward, done = agent.game.move_snake(action)
+        reward, done, reason = game.move_snake(action)
 
-        next_state = agent.get_state(agent.game)
+        next_state = agent.get_state(game)
 
         agent.learn(state, action, reward, next_state, done)
 
         #check if snake is killed for not eating a fruit in a while
-        agent.game.update_frames_since_last_fruit()
+        game.update_frames_since_last_fruit(agent.n_game)
 
         if done:
             agent.n_game += 1
-            total_score += agent.game.score
+            total_score += game.score
             mean_score = total_score / agent.n_game
-            plot_scores.append(agent.game.score)
+            plot_scores.append(game.score)
             plot_mean_scores.append(mean_score)
-            plot(plot_scores, plot_mean_scores)
-            agent.game.game_over()      
+            game.game_over(agent.n_game, reason)    
 
-        if agent.game.restart == True:
-            agent.game.restart = False
+        if game.restart == True:
+            game.restart = False
             continue
     
-        agent.game.redraw_window()
-        agent.game.event_handler()
+        game.redraw_window()
+        game.event_handler()
 
-        if agent.n_game == 3000:
+        if agent.n_game == 500:
             np.save("./Tables/cartpole_table.npy", agent.qtable)
+            print("-" * 20)
+            print(f"Average Score: {mean_score}, Highest Score: {agent.game.high_score}")
             break
+    plot(plot_scores, plot_mean_scores)
 
 def test():
     env = SnakeGame(30)
     testing_agent = Agent(env)
-    
-    pygame.font.init()
-
     testing_agent.qtable = np.load("./Tables/cartpole_table.npy")
 
     for i in range(100):
@@ -185,17 +189,17 @@ def test():
             action = np.argmax(testing_agent.qtable[tuple(state)])
 
             # move snake
-            reward, done = testing_agent.game.move_snake(action)
+            reward, done, reason = testing_agent.game.move_snake(action)
 
             # get next state
             next_state = testing_agent.get_state(testing_agent.game)
 
             #check if snake is killed for not eating a fruit in a while
-            testing_agent.game.update_frames_since_last_fruit()
+            testing_agent.game.update_frames_since_last_fruit(testing_agent.n_game)
 
             if done:
                 scores.append(testing_agent.game.score)
-                testing_agent.game.game_over() 
+                testing_agent.game.game_over(testing_agent.n_game, reason) 
 
             if testing_agent.game.restart == True:
                 testing_agent.game.restart = False
@@ -213,9 +217,8 @@ def test():
 def main():
     if not os.path.exists("./Tables"):
         os.mkdir("./Tables")
-
-    for i in range(1):
-        train()
+    # for i in range(1):
+    # train()
     test()
         
 if __name__ == "__main__":	

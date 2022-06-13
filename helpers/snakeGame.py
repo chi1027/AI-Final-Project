@@ -38,6 +38,8 @@ class SnakeGame():
 
 		self.width = 500
 		self.height = 600
+		# self.width = 600
+		# self.height = 500
 		self.grid_start_y = 100
 		self.win = pygame.display.set_mode((self.width, self.height))
 		self.play = True
@@ -118,19 +120,23 @@ class SnakeGame():
 			self.snake.directions.pop()
 
 		self.snake.update_body_positions()
-		done = False
+		done = 0
 		reward = 0
+		reason = None
 		
 		if self.check_wall_collision():
-			reward = -5
-			done = True
+			reward = -1
+			done = 1
+			reason = "Wall"
+			
 
 		elif self.check_body_collision():
-			reward = -5
-			done = True
+			reward = -1
+			done = 1
+			reason = "Body"
 
 		elif self.check_fruit_collision():
-			reward = 10
+			reward = 1
 
 		else:
 			prev_head = self.previous_head  # previous state
@@ -139,10 +145,7 @@ class SnakeGame():
 			d1 = abs(self.fruit_pos[0] - curr_head[0]) + abs(self.fruit_pos[1] - curr_head[1])
 			reward = 1 if d1 < d0 else -1
 		
-		return reward, done
-
-
-
+		return reward, done, reason
 
 	def draw_grid_updates(self):
 		"""Function called from redraw_window() to update the grid area of the window."""
@@ -254,16 +257,16 @@ class SnakeGame():
 				pygame.quit()
 				quit()
 
-	def update_frames_since_last_fruit(self):
+	def update_frames_since_last_fruit(self, game_idx):
 		"""Function to check if the snake needs to be killed for not eating a fruit in a while."""
 		
 		self.frames_since_last_fruit += 1
 		if (self.frames_since_last_fruit == 50 and self.score < 6) or self.frames_since_last_fruit == 250:
-			self.game_over()
+			self.game_over(game_idx, "circle")
 
-	def game_over(self):
+	def game_over(self, game_idx, done):
 		"""Function that restarts the game upon game over."""
-
+		print(f"Games: {game_idx}; Score: {self.score}; Reason: {done}")
 		self.snake = Snake(self.rows,self.cols)
 		self.generate_fruit()
 		self.restart = True
