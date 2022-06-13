@@ -32,7 +32,7 @@ python3 playSnakeGame.py
 
 ### BFS:
 
-average score: 30.17
+average score: 71.44
 
 ![alt text](https://github.com/chi1027/AI-Final-Project/blob/main/image/BFS.png)
 
