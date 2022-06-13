@@ -1,6 +1,9 @@
 # AI-Final-Project
 ## Snake Game AI
 
+Snake is a classical arcade game that originated in 1976.
+In this project, we want to implement and compared three methods, BFS, Q Learning, and DQN for this classical game.
+
 ### Reference:
 Envionment: https://github.com/craighaber/AI-for-Snake-Game
 
