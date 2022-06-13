@@ -2,6 +2,7 @@ import pygame
 import random
 import collections
 from helpers.snake import Snake
+from helpers.plot import plot
 
 
 class SnakeGame():
@@ -34,7 +35,7 @@ class SnakeGame():
         self.restart = False
         self.clock = pygame.time.Clock()
         self.fps = fps
-        self.rows = 10
+        self.rows = 20
         self.cols = self.rows
         self.snake = Snake(self.rows,self.cols)
         self.fruit_pos = (0,0)
@@ -106,10 +107,11 @@ class SnakeGame():
         vis = set()
         vis.add(start)
         queue = [start]
-        count = 0
+        flag = 0
         while len(queue) > 0:
             n = queue.pop(0)
             if n == end:
+                flag = 1
                 break
             for i in range(0,4):
                 if i == 0:
@@ -121,13 +123,12 @@ class SnakeGame():
                 if i == 3:
                     now = (n[0]+1, n[1])
                 
-                if now not in vis and now[0] < 10 and now[0] >= 0 and now[1] < 10 and now[1] >= 0 and now not in self.snake.body:
-                    count+=1
+                if now not in vis and now[0] < self.rows and now[0] >= 0 and now[1] < self.cols and now[1] >= 0 and now not in self.snake.body:
                     pre_node[now] = n
                     vis.add(now)
                     queue.append(now)
 
-        if count != 0:
+        if flag != 0:
             next_n = n
             node = pre_node[n]
             r = next_n[0] - node[0]
@@ -157,7 +158,15 @@ class SnakeGame():
             path.reverse()
             return path
         else:
-            path.append(1)
+            if (start[0], start[1]-1) not in self.snake.body and start[1]-1 >= 0:
+                path.append(0)
+            elif (start[0]-1, start[1]) not in self.snake.body and start[0]-1 >= 0:
+                path.append(1)
+            elif (start[0], start[1]+1) not in self.snake.body and start[1]+1 < self.cols:
+                path.append(2)
+            else:
+                path.append(3)
+            
             return path
         
     def move_snake(self):
@@ -165,7 +174,6 @@ class SnakeGame():
         
         path = self.bfs()
         keys = path[0]
-
         #Determine which arrow key the user selected
         if keys == 0:
             direct = "left"
@@ -300,20 +308,23 @@ class SnakeGame():
         self.snake = Snake(self.rows,self.cols)
         self.generate_fruit()
         self.restart = True
-        print(self.score)
+        #print(self.score)
         self.total_score += self.score 
         if self.score > self.high_score:
             self.high_score = self.score
-        self.score = 0
 
 
 def main():
     """Function to play the Snake Game."""
 
-    fps = 60
+    fps = 500
     game = SnakeGame(fps)
     pygame.font.init()
-    count = 0
+    count = 1
+    flag = 0
+
+    plot_scores = []
+    plot_mean_scores = []
 
     while game.play:
         #Lock the game at a set fps
@@ -323,16 +334,21 @@ def main():
         game.check_collisions()
 
         if game.restart == True:
-            count+=1
+            mean_score = game.total_score / count
+            plot_scores.append(game.score)
+            plot_mean_scores.append(mean_score)
             game.restart = False
+            game.score = 0
+            count+=1
             continue
         
         game.redraw_window()
         game.event_handler()
 
-        if count == 10:
-            print(game.total_score/10)
-            break
+        '''if count == 51 and flag == 0:
+            print(game.total_score/count)
+            plot(plot_scores, plot_mean_scores)
+            flag = 1'''
 
         
 if __name__ == "__main__":
