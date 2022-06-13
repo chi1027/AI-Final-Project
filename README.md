@@ -1,4 +1,28 @@
 # AI-Final-Project
-Snake Game AI
+##Snake Game AI
 
-reference: https://github.com/craighaber/AI-for-Snake-Game
+### Reference:
+Envionment: https://github.com/craighaber/AI-for-Snake-Game
+
+Q Learning state: https://github.com/techtribeyt/snake-q-learning
+
+### Requirements
+
+pip install -r requirements.txt
+
+### Usage
+
+#### BFS
+
+python3 bfs.py
+
+#### Q-Learning
+
+python3 Agent.py
+
+#### DQN
+
+python3 DQN.py
+
+
+
