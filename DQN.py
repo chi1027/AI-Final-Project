@@ -105,7 +105,7 @@ class Agent():
 
         self.optimizer = torch.optim.Adam(
             self.evaluate_net.parameters(), lr=self.learning_rate)
-        self.lossse = []
+        self.losses = []
 
         self.action = {
             0: "left", 
@@ -113,7 +113,6 @@ class Agent():
             2: "up",
             3: "down"
         }
-
 
     def get_state(self,game):
         head = game.snake.body[0]
@@ -166,7 +165,6 @@ class Agent():
                     action = self.action[random.randint(0,3)]
                 else:
                     x = torch.tensor(state).to(torch.float32)
-                    print(torch.argmax(self.evaluate_net(x)))
                     action = self.action[int(torch.argmax(self.evaluate_net(x)))]
                 # End your code
         return action
@@ -211,7 +209,9 @@ def train():
             agent.epsilon = 0
         else:
             agent.epsilon = 0.1
+
         agent.game.clock.tick(fps)
+        agent.count += 1
 
         # get current state
         state = agent.get_state(game)
