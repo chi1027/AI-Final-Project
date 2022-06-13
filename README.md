@@ -31,9 +31,27 @@ python3 DQN.py
 
 python3 playSnakeGame.py
 
+### Hyperparameters
+
+#### Q-Learning:
+
+learning＿rate = 0.01  
+GAMMA = 0.95  
+epsilon = 1.0  
+eps_decay = 0.98  
+epsilon_min = 0.001  
+
+#### DQN:
+
+epsilon=0.1  
+learning_rate = 0.002  
+GAMMA = 0.8  
+batch_size = 32  
+capacity(memory) = 10000
+
 ### Result:
 
-### BFS:
+#### BFS:
 
 average score: 71.44
 
