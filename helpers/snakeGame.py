@@ -38,26 +38,47 @@ class SnakeGame():
 
 		self.width = 500
 		self.height = 600
-		# self.width = 600
-		# self.height = 500
 		self.grid_start_y = 100
 		self.win = pygame.display.set_mode((self.width, self.height))
 		self.play = True
 		self.restart = False
 		self.clock = pygame.time.Clock()
 		self.fps = fps
-		self.rows = 10
+		self.rows = 20
 		self.cols = self.rows
-		# self.rows = 40
-		# self.cols = 60
 		self.snake = Snake(self.rows,self.cols)
 		self.previous_head = None
+		self.dir = "right"
 		self.fruit_pos = (0,0)
 		self.generate_fruit()
 		self.score = 0
 		self.high_score = 0
 		self.frames_since_last_fruit = 0
-		
+	
+	def get_state(self):
+		head = self.snake.body[0]
+		state = [
+			int(self.dir == "left"),
+			int(self.dir == "right"),
+			int(self.dir == "up"),
+			int(self.dir == "down"),
+			int(self.fruit_pos[1] < head[1]),  # fruit at left side
+			int(self.fruit_pos[1] > head[1]),  # fruit at right side
+			int(self.fruit_pos[0] < head[0]),  # fruit at up side
+			int(self.fruit_pos[0] > head[0]),  # fruit at down side
+			self.is_collision((head[0], head[1]-1)),
+			self.is_collision((head[0], head[1]+1)),
+			self.is_collision((head[0]-1, head[1])),
+			self.is_collision((head[0]+1, head[1]))
+		]
+
+		return tuple(state)
+	
+	def is_collision(self, pt):
+		if pt[0] < 0 or pt[0] >= self.cols or pt[1] < 0 or pt[1] >= self.cols or pt in self.snake.body[1:]:
+			return 1
+		return 0
+
 	def redraw_window(self):
 		"""Function to update the pygame window every frame, called from playSnakeGame.py."""
 
@@ -118,32 +139,30 @@ class SnakeGame():
 		self.snake.directions.appendleft(direct)
 		if len(self.snake.directions) > len(self.snake.body):
 			self.snake.directions.pop()
+		self.dir = direct
 
 		self.snake.update_body_positions()
-		done = 0
-		reward = 0
-		reason = None
-		
+
 		if self.check_wall_collision():
-			reward = -1
-			done = 1
 			reason = "Wall"
-			
-
-		elif self.check_body_collision():
-			reward = -1
+			reward = -100
 			done = 1
+		elif self.check_body_collision():		
 			reason = "Body"
-
+			reward = -100
+			done = 1
 		elif self.check_fruit_collision():
-			reward = 1
-
+			reason = None
+			reward = 10
+			done = 0
 		else:
 			prev_head = self.previous_head  # previous state
 			curr_head = self.snake.body[0]  # current state
 			d0 = abs(self.fruit_pos[0] - prev_head[0]) + abs(self.fruit_pos[1] - prev_head[1])
 			d1 = abs(self.fruit_pos[0] - curr_head[0]) + abs(self.fruit_pos[1] - curr_head[1])
 			reward = 1 if d1 < d0 else -1
+			reason = None
+			done = 0
 		
 		return reward, done, reason
 
@@ -216,7 +235,7 @@ class SnakeGame():
 			#Generate a new fruit in a random position
 			self.generate_fruit()
 			self.score += 1
-
+			self.frames_since_last_fruit = 0
 			return True
 		return False
 
@@ -230,7 +249,6 @@ class SnakeGame():
 
 		#If there is a wall collision, game over
 		if head_x == self.cols or head_y == self.rows or head_x < 0 or head_y < 0:
-			# self.game_over()
 			return True
 		return False
 
@@ -243,7 +261,6 @@ class SnakeGame():
 			body_without_head = self.snake.body[1:]
 
 			if head in body_without_head:
-				# self.game_over()
 				return True
 		return False
 
@@ -257,19 +274,20 @@ class SnakeGame():
 				pygame.quit()
 				quit()
 
-	def update_frames_since_last_fruit(self, game_idx):
+	def update_frames_since_last_fruit(self):
 		"""Function to check if the snake needs to be killed for not eating a fruit in a while."""
 		
 		self.frames_since_last_fruit += 1
-		if (self.frames_since_last_fruit == 50 and self.score < 6) or self.frames_since_last_fruit == 250:
-			self.game_over(game_idx, "circle")
+		if (self.frames_since_last_fruit == 50 and self.score < 6) or self.frames_since_last_fruit >= 250:
+			self.game_over()
 
-	def game_over(self, game_idx, done):
+	def game_over(self):
 		"""Function that restarts the game upon game over."""
-		print(f"Games: {game_idx}; Score: {self.score}; Reason: {done}")
 		self.snake = Snake(self.rows,self.cols)
 		self.generate_fruit()
 		self.restart = True
 		if self.score > self.high_score:
 			self.high_score = self.score
 		self.score = 0
+		self.play = False
+		self.frames_since_last_fruit = 0
