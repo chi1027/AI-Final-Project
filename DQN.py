@@ -64,7 +64,7 @@ class Net(nn.Module):
 
     def __init__(self,  num_actions, hidden_layer_size=50):
         super(Net, self).__init__()
-        self.input_state = 3  # the dimension of state space
+        self.input_state = 12  # the dimension of state space
         self.num_actions = num_actions  # the dimension of action space
         self.fc1 = nn.Linear(self.input_state, 32)  # input layer
         self.fc2 = nn.Linear(32, hidden_layer_size)  # hidden layer
@@ -86,74 +86,31 @@ class Net(nn.Module):
         return q_values
 
 class Agent():
-    def __init__(self, game, epsilon=0.1, learning_rate=0.002, GAMMA=0.8, batch_size=32, capacity=10000):
+    def __init__(self, game, learning_rate=0.001, GAMMA=0.95, batch_size=32, capacity=10000):
         self.game = game
-        self.n_game = 0
-        self.block_size = 1
-        self.n_action = 4
-        self.count = 0
-        
-        self.epsilon = epsilon
+        self.epsilon = 1.0
+        self.eps_discount = 0.98
+        self.min_eps = 0.001     
         self.learning_rate = learning_rate
         self.gamma = GAMMA
         self.batch_size = batch_size
         self.capacity = capacity
+        self.n_action = 4
+        self.count = 0
 
         self.buffer = replay_buffer(self.capacity)
         self.evaluate_net = Net(self.n_action)
         self.target_net = Net(self.n_action)
-
         self.optimizer = torch.optim.Adam(
             self.evaluate_net.parameters(), lr=self.learning_rate)
-        self.losses = []
-
+        self.n_game = 0
         self.action = {
             0: "left", 
             1: "right",
             2: "up",
             3: "down"
         }
-
-    def get_state(self,game):
-        head = game.snake.body[0]
-        dist_x = game.fruit_pos[1] - head[1]
-        dist_y = game.fruit_pos[0] - head[0]
-		
-        if dist_x < 0:
-            pos_x = 0
-        elif dist_x > 0:
-            pos_x = 1
-        else:
-            pos_x = 2
-        
-        if dist_y < 0:
-            pos_y = 0
-        elif dist_y > 0:
-            pos_y = 1
-        else:
-            pos_y = 2
-        
-        sqs = [
-            (head[0],                 head[1]-self.block_size),
-            (head[0],                 head[1]+self.block_size),
-            (head[0]-self.block_size, head[1]),
-            (head[0]+self.block_size, head[1]),
-        ]
-
-        surrounding_list = []
-        for sq in sqs:
-            if sq[0] < 0 or sq[1] < 0:
-                surrounding_list.append('1')
-            elif sq[0] >= self.game.cols or sq[1] >= self.game.rows:
-                surrounding_list.append('1')
-            elif sq in self.game.snake.body[1:]:
-                surrounding_list.append('1')
-            else:
-                surrounding_list.append('0')
-        surroundings = ''.join(surrounding_list)
-        surroundings = int(surroundings, 2)
-        
-        return (pos_x, pos_y, surroundings)
+        self.losses = []
 
     def choose_action(self, state):
         if len(self.game.snake.directions) == 0:
@@ -170,7 +127,7 @@ class Agent():
         return action
 
     def learn(self):
-        if self.n_game % 100 == 0:
+        if self.count % 100 == 0:
             self.target_net.load_state_dict(self.evaluate_net.state_dict())
 
         batch = self.buffer.sample(self.batch_size)
@@ -201,58 +158,123 @@ def train():
     fps = 3000
     game = SnakeGame(fps)
     agent = Agent(game)
-    episode = 1000
 
-    state = agent.get_state(agent.game)
-    while agent.game.play:
-        if agent.n_game > 100:
-            agent.epsilon = 0
-        else:
-            agent.epsilon = 0.1
+    plot_scores = []
+    plot_mean_scores = []
+    total_score = 0
 
-        agent.game.clock.tick(fps)
-        agent.count += 1
+    state = game.get_state()
+    for _ in tqdm(range(2000)):
+        agent.epsilon = max(agent.epsilon * agent.eps_discount, agent.min_eps)
+        game.play = True
+        while game.play:
+            game.clock.tick(fps)
+            agent.count += 1
 
-        # get current state
-        state = agent.get_state(game)
+            # get current state
+            state = game.get_state()
 
-        # get move
-        action = agent.choose_action(state)
-        action_idx = list(agent.action.values()).index(action)
+            # get move
+            action = agent.choose_action(state)
+            action_idx = list(agent.action.values()).index(action)
 
-        # perform move and get new state
-        reward, done, reason = game.move_snake(action)
+            # perform move and get new state
+            reward, done, reason = game.move_snake(action)
 
-        # get next state
-        next_state = agent.get_state(game)
-        agent.buffer.insert(state, action_idx, reward, next_state, int(done))
+            # get next state
+            next_state = game.get_state()
+            agent.buffer.insert(state, action_idx, reward, next_state, int(done))
 
-        if agent.count >= 100:
-            agent.learn()
+            if agent.count >= 1000:
+                agent.learn()
 
-        agent.game.update_frames_since_last_fruit(agent.n_game)
+            game.update_frames_since_last_fruit()
 
-        if done:
-            agent.n_game += 1
-            agent.game.game_over(agent.n_game, reason)
-        
-        if agent.game.restart == True:
-            agent.game.restart = False
-            continue
-            
-        agent.game.redraw_window()
-        agent.game.event_handler()
+            if done:
+                agent.n_game += 1
+                total_score += game.score
+                mean_score = total_score / agent.n_game
+                plot_scores.append(game.score)
+                plot_mean_scores.append(mean_score)
+                # print(f"Games: {agent.n_game}; Score: {game.score}; Reason: {reason}")
+                game.game_over()
 
-        if agent.n_game == 1000:
-            torch.save(agent.target_net.state_dict(), "./Tables/DQN.pt")
-            break
+            if game.restart == True:
+                game.restart = False
+                continue
+                
+            # game.redraw_window()
+            game.event_handler()
 
+    torch.save(agent.target_net.state_dict(), "./Tables/DQN.pt")
+    print("Mean Score: {}, Highest Score: {}".format(
+        total_score/agent.n_game, game.high_score))
+    print("-" * 20)
+    plot(plot_scores, plot_mean_scores, "DQN_train")
 
-def main():
+def test():
+    fps = 3000
+    game = SnakeGame(fps)
+    testing_agent = Agent(game)
+    testing_agent.target_net.load_state_dict(torch.load("./Tables/DQN.pt"))
+    
+    total_score = 0
+    plot_scores = []
+    plot_mean_score = []
+
+    for _ in tqdm(range(100)):
+        game.play = True
+        while game.play:
+            game.clock.tick(fps)
+            # get current state
+            state = game.get_state()
+            # get move
+            x = torch.tensor(state).to(torch.float32)
+            action = testing_agent.action[
+                int(torch.argmax(testing_agent.target_net(x)))
+            ]
+            # perform move and get new state
+            reward, done, reason = game.move_snake(action)
+
+            # get next state
+            next_state = game.get_state()
+
+            game.update_frames_since_last_fruit()
+
+            if done:
+                testing_agent.n_game += 1
+                total_score += game.score
+                mean_score = total_score / testing_agent.n_game
+                plot_scores.append(game.score)
+                plot_mean_score.append(mean_score)
+                # print(f"Games: {testing_agent.n_game}; Score: {game.score}; Reason: {reason}")
+                game.game_over()
+
+            if game.restart == True:
+                game.restart = False
+                continue
+                
+            game.redraw_window()
+            game.event_handler()
+
+            state = next_state
+    print("-" * 20)
+    print("Mean Score: {:.1f}, Highest Score: {}".format(
+        total_score/testing_agent.n_game, game.high_score))
+
+def seed(seed=20):
+    '''
+    It is very IMPORTENT to set random seed for reproducibility of your result!
+    '''
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    
+if __name__ == "__main__":
+    seed(100)
     if not os.path.exists("./Tables"):
         os.mkdir("./Tables")
     train()
-        
-if __name__ == "__main__":	
-    main()
+    test()
         

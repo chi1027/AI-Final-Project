@@ -86,7 +86,7 @@ def train():
     total_score = 0
     record = 0
 
-    for _ in tqdm(range(5000)):
+    for _ in tqdm(range(7500)):
         agent.epsilon = max(agent.epsilon * agent.eps_discount, agent.min_eps)
         game.play = True
         while game.play:
@@ -133,7 +133,7 @@ def train():
     np.save(f"./Tables/snake_table.npy", agent.qtable)
     print("-" * 20)
     print(f"Average Score: {mean_score}, Highest Score: {agent.game.high_score}")
-    plot(plot_scores, plot_mean_scores)
+    plot(plot_scores, plot_mean_scores, "qlearning_train")
 
 def test():
     fps = 3000
@@ -141,12 +141,12 @@ def test():
     game.high_score = 0
     testing_agent = Agent(game)
     testing_agent.qtable = np.load(f"./Tables/snake_table.npy")
-
+    testing_agent.epsilon = 0
     total_score = 0
 
-    for i in range(10):
+    for _ in range(100):
         state = game.get_state()
-        testing_agent.epsilon = 0
+        game.play = True
         while game.play:
             testing_agent.game.clock.tick(game.fps)
 
@@ -178,10 +178,10 @@ def test():
 
             state = next_state
     print("-" * 20)
-    print("Mean Score: {}, Highest Score: {}".format(
-        total_score/testing_agent.n_game, game.high_score))
+    print("Mean Score: {:.1f}, Highest Score: {}".format(
+        total_score/100, game.high_score))
 
-def seed(seed=40):
+def seed(seed=20):
     '''
     It is very IMPORTENT to set random seed for reproducibility of your result!
     '''
@@ -190,7 +190,7 @@ def seed(seed=40):
     np.random.seed(seed)
 
 if __name__ == "__main__":
-    seed()
+    seed(100)
     if not os.path.exists("./Tables"):
         os.mkdir("./Tables")
     train()
