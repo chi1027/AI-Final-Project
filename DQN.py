@@ -293,7 +293,7 @@ def display():
 
             if done:
                 testing_agent.n_game += 1
-                total_score += game.scores
+                total_score += game.score
                 mean_score = total_score / testing_agent.n_game
                 plot_scores.append(game.score)
                 plot_mean_score.append(mean_score)
