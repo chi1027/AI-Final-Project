@@ -40,7 +40,7 @@ python3 playSnakeGame.py
 learning＿rate = 0.01  
 GAMMA = 0.95  
 epsilon = 1.0  
-eps_decay = 0.98  
+eps_discount = 0.98  
 epsilon_min = 0.001  
 ```
 #### DQN:
@@ -48,18 +48,33 @@ epsilon_min = 0.001
 learning_rate = 0.001
 GAMMA = 0.95
 epsilon = 1.0
-eps_decay = 0.95
+eps_discount = 0.98
 epsilon_min = 0.001
 batch_size = 32  
 capacity(memory) = 10000
 ```
 ### Result:
 
+| | BFS | Q-Learning | DQN  |
+| --- | --- | --- | --- |
+| Average Score | 71.4 | 34.4 | 34.5 |
+| Highest Score | 107  | 67   | 66   |
+
 #### BFS:
-
-average score: 71.44
-
 ![alt text](https://github.com/chi1027/AI-Final-Project/blob/main/image/BFS.png)
+
+#### Q-Learning
+
+**Training process figure**
+
+![alt text](https://github.com/chi1027/AI-Final-Project/blob/main/image/qlearning_train.png)
+
+
+#### DQN
+**Training process figure**
+
+![alt text](https://github.com/chi1027/AI-Final-Project/blob/main/image/DQN_train.png)
+
 
 
 
