@@ -86,7 +86,7 @@ def train():
     total_score = 0
     record = 0
 
-    for _ in tqdm(range(7500)):
+    for _ in tqdm(range(2000)):
         agent.epsilon = max(agent.epsilon * agent.eps_discount, agent.min_eps)
         game.play = True
         while game.play:
@@ -129,8 +129,7 @@ def train():
         
             # game.redraw_window()
             game.event_handler()
-        
-    np.save(f"./Tables/snake_table.npy", agent.qtable)
+    np.save(f"./Tables/snake_table_{_+1}.npy", agent.qtable)
     print("-" * 20)
     print(f"Average Score: {mean_score}, Highest Score: {agent.game.high_score}")
     plot(plot_scores, plot_mean_scores, "qlearning_train")
@@ -143,8 +142,9 @@ def test():
     testing_agent.qtable = np.load(f"./Tables/snake_table.npy")
     testing_agent.epsilon = 0
     total_score = 0
+    num = 100
 
-    for _ in range(100):
+    for i in tqdm(range(num)):
         state = game.get_state()
         game.play = True
         while game.play:
@@ -165,7 +165,7 @@ def test():
             if done:
                 testing_agent.n_game += 1
                 total_score += game.score
-                print(f"Games: {testing_agent.n_game}; Score: {game.score}; Reason: {reason}")
+                # print(f"Games: {testing_agent.n_game}; Score: {game.score}; Reason: {reason}")
                 game.game_over()
                 break
 
@@ -179,7 +179,7 @@ def test():
             state = next_state
     print("-" * 20)
     print("Mean Score: {:.1f}, Highest Score: {}".format(
-        total_score/100, game.high_score))
+        total_score/num, game.high_score))
 
 def seed(seed=20):
     '''
