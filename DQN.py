@@ -66,8 +66,8 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.input_state = 12  # the dimension of state space
         self.num_actions = num_actions  # the dimension of action space
-        self.fc1 = nn.Linear(self.input_state, 32)  # input layer
-        self.fc2 = nn.Linear(32, hidden_layer_size)  # hidden layer
+        self.fc1 = nn.Linear(self.input_state, 64)  # input layer
+        self.fc2 = nn.Linear(64, hidden_layer_size)  # hidden layer
         self.fc3 = nn.Linear(hidden_layer_size, num_actions)  # output layer
 
     def forward(self, states):
@@ -86,10 +86,10 @@ class Net(nn.Module):
         return q_values
 
 class Agent():
-    def __init__(self, game, learning_rate=0.001, GAMMA=0.95, batch_size=32, capacity=10000):
+    def __init__(self, game, learning_rate=0.002, GAMMA=0.95, batch_size=32, capacity=10000):
         self.game = game
         self.epsilon = 1.0
-        self.eps_discount = 0.98
+        self.eps_discount = 0.97
         self.min_eps = 0.001     
         self.learning_rate = learning_rate
         self.gamma = GAMMA
@@ -164,7 +164,7 @@ def train():
     total_score = 0
 
     state = game.get_state()
-    for _ in tqdm(range(2000)):
+    for _ in tqdm(range(500)):
         agent.epsilon = max(agent.epsilon * agent.eps_discount, agent.min_eps)
         game.play = True
         while game.play:
@@ -205,8 +205,7 @@ def train():
                 
             # game.redraw_window()
             game.event_handler()
-
-    torch.save(agent.target_net.state_dict(), "./Tables/DQN.pt")
+    torch.save(agent.target_net.state_dict(), f"./Tables/DQN.pt")
     print("Mean Score: {}, Highest Score: {}".format(
         total_score/agent.n_game, game.high_score))
     print("-" * 20)
@@ -221,8 +220,9 @@ def test():
     total_score = 0
     plot_scores = []
     plot_mean_score = []
+    num = 100
 
-    for _ in tqdm(range(100)):
+    for i in tqdm(range(num)):
         game.play = True
         while game.play:
             game.clock.tick(fps)
@@ -247,7 +247,7 @@ def test():
                 mean_score = total_score / testing_agent.n_game
                 plot_scores.append(game.score)
                 plot_mean_score.append(mean_score)
-                # print(f"Games: {testing_agent.n_game}; Score: {game.score}; Reason: {reason}")
+                # print(f"Games: {i + 1}; Score: {game.score}; Reason: {reason}")
                 game.game_over()
 
             if game.restart == True:
@@ -260,7 +260,58 @@ def test():
             state = next_state
     print("-" * 20)
     print("Mean Score: {:.1f}, Highest Score: {}".format(
-        total_score/testing_agent.n_game, game.high_score))
+        total_score/(num), game.high_score))
+
+def display():
+    fps = 30
+    game = SnakeGame(fps)
+    testing_agent = Agent(game)
+    testing_agent.target_net.load_state_dict(torch.load("./Tables/DQN.pt"))
+    
+    total_score = 0
+    plot_scores = []
+    plot_mean_score = []
+    num = 10
+
+    for i in range(num):
+        game.play = True
+        while game.play:
+            game.clock.tick(fps)
+            # get current state
+            state = game.get_state()
+            # get move
+            x = torch.tensor(state).to(torch.float32)
+            action = testing_agent.action[
+                int(torch.argmax(testing_agent.target_net(x)))
+            ]
+            # perform move and get new state
+            reward, done, reason = game.move_snake(action)
+
+            # get next state
+            next_state = game.get_state()
+
+            game.update_frames_since_last_fruit()
+
+            if done:
+                testing_agent.n_game += 1
+                total_score += game.score
+                mean_score = total_score / testing_agent.n_game
+                plot_scores.append(game.score)
+                plot_mean_score.append(mean_score)
+                print(f"Games: {i + 1}; Score: {game.score}; Reason: {reason}")
+                game.game_over()
+
+            if game.restart == True:
+                game.restart = False
+                continue
+                
+            game.redraw_window()
+            game.event_handler()
+
+            state = next_state
+    print("-" * 20)
+    print("Mean Score: {:.1f}, Highest Score: {}".format(
+        total_score/(num), game.high_score))
 
 def seed(seed=20):
     '''
@@ -275,6 +326,7 @@ if __name__ == "__main__":
     seed(100)
     if not os.path.exists("./Tables"):
         os.mkdir("./Tables")
-    train()
-    test()
+    # train()
+    # test()
+    display()
         

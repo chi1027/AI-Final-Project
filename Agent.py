@@ -142,9 +142,8 @@ def test():
     testing_agent.qtable = np.load(f"./Tables/snake_table.npy")
     testing_agent.epsilon = 0
     total_score = 0
-    num = 100
 
-    for i in tqdm(range(num)):
+    for i in range(100):
         state = game.get_state()
         game.play = True
         while game.play:
@@ -165,7 +164,7 @@ def test():
             if done:
                 testing_agent.n_game += 1
                 total_score += game.score
-                # print(f"Games: {testing_agent.n_game}; Score: {game.score}; Reason: {reason}")
+                print(f"Games: {testing_agent.n_game}; Score: {game.score}; Reason: {reason}")
                 game.game_over()
                 break
 
@@ -179,7 +178,53 @@ def test():
             state = next_state
     print("-" * 20)
     print("Mean Score: {:.1f}, Highest Score: {}".format(
-        total_score/num, game.high_score))
+        total_score/100, game.high_score))
+
+def display():
+    fps = 50
+    game = SnakeGame(fps)
+    game.high_score = 0
+    testing_agent = Agent(game)
+    testing_agent.qtable = np.load(f"./Tables/snake_table.npy")
+    testing_agent.epsilon = 0
+    total_score = 0
+
+    for i in range(10):
+        state = game.get_state()
+        game.play = True
+        while game.play:
+            testing_agent.game.clock.tick(game.fps)
+
+            # choose action
+            action = testing_agent.choose_action(state)
+
+            # move snake
+            reward, done, reason = testing_agent.game.move_snake(action)
+
+            # get next state
+            next_state = game.get_state()
+
+            #check if snake is killed for not eating a fruit in a while
+            testing_agent.game.update_frames_since_last_fruit()
+
+            if done:
+                testing_agent.n_game += 1
+                total_score += game.score
+                print(f"Games: {testing_agent.n_game}; Score: {game.score}; Reason: {reason}")
+                game.game_over()
+                break
+
+            if game.restart == True:
+                game.restart = False
+                continue
+
+            game.redraw_window()
+            game.event_handler()
+
+            state = next_state
+    print("-" * 20)
+    print("Mean Score: {:.1f}, Highest Score: {}".format(
+        total_score/10, game.high_score))
 
 def seed(seed=20):
     '''
@@ -193,5 +238,6 @@ if __name__ == "__main__":
     seed(100)
     if not os.path.exists("./Tables"):
         os.mkdir("./Tables")
-    train()
-    test()
+    # train()
+    # test()
+    display()
