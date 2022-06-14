@@ -8,9 +8,6 @@
 
 import pygame
 import random
-import collections
-from helpers import neuralNetwork  as nn
-from helpers import geneticAlgorithm as ga 
 from helpers.snake import Snake
 
 
