@@ -4,6 +4,8 @@
 Snake is a classical arcade game that originated in 1976.  
 In this project, we want to implement and compared three methods, BFS, Q Learning, and DQN for this classical game.
 
+![alt text](https://github.com/chi1027/AI-Final-Project/blob/main/image/train_aftersometime.gif)
+
 ### Reference:
 Envionment: https://github.com/craighaber/AI-for-Snake-Game
 
