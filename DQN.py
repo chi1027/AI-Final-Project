@@ -86,7 +86,7 @@ class Net(nn.Module):
         return q_values
 
 class Agent():
-    def __init__(self, game, learning_rate=0.002, GAMMA=0.95, batch_size=32, capacity=10000):
+    def __init__(self, game, learning_rate=0.001, GAMMA=0.95, batch_size=32, capacity=10000):
         self.game = game
         self.epsilon = 1.0
         self.eps_discount = 0.97
@@ -164,7 +164,7 @@ def train():
     total_score = 0
 
     state = game.get_state()
-    for _ in tqdm(range(500)):
+    for _ in tqdm(range(1000)):
         agent.epsilon = max(agent.epsilon * agent.eps_discount, agent.min_eps)
         game.play = True
         while game.play:
@@ -215,14 +215,13 @@ def test():
     fps = 3000
     game = SnakeGame(fps)
     testing_agent = Agent(game)
-    testing_agent.target_net.load_state_dict(torch.load("./Tables/DQN.pt"))
+    testing_agent.target_net.load_state_dict(torch.load(f"./Tables/DQN.pt"))
     
     total_score = 0
     plot_scores = []
     plot_mean_score = []
     num = 100
-
-    for i in tqdm(range(num)):
+    for _ in tqdm(range(num)):
         game.play = True
         while game.play:
             game.clock.tick(fps)
@@ -326,7 +325,7 @@ if __name__ == "__main__":
     seed(100)
     if not os.path.exists("./Tables"):
         os.mkdir("./Tables")
-    # train()
-    # test()
-    display()
+    train()
+    test()
+    # display()
         
